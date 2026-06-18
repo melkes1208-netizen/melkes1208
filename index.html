@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로또번호 추천기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: linear-gradient(135deg, #0f172a, #1e293b);
+            --color: white;
+            --color-muted: #cbd5e1;
+            --container-bg: rgba(255, 255, 255, 0.08);
+            --container-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --set-bg: rgba(255, 255, 255, 0.08);
+            --copy-btn-bg: rgba(255, 255, 255, 0.12);
+            --copy-btn-border: rgba(255, 255, 255, 0.2);
+            --copy-btn-color: #cbd5e1;
+            --copy-btn-hover-bg: rgba(255, 255, 255, 0.22);
+            --copy-btn-hover-color: #fff;
+            --toast-bg: rgba(30, 41, 59, 0.95);
+            --toast-color: #4ade80;
+            --toggle-bg: rgba(255, 255, 255, 0.12);
+            --toggle-border: rgba(255, 255, 255, 0.18);
+            --toggle-color: #facc15;
+        }
+
+        body.light {
+            --bg: linear-gradient(135deg, #f0f9ff, #dbeafe);
+            --color: #1e293b;
+            --color-muted: #64748b;
+            --container-bg: rgba(255, 255, 255, 0.82);
+            --container-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --set-bg: rgba(0, 0, 0, 0.04);
+            --copy-btn-bg: rgba(0, 0, 0, 0.06);
+            --copy-btn-border: rgba(0, 0, 0, 0.12);
+            --copy-btn-color: #64748b;
+            --copy-btn-hover-bg: rgba(0, 0, 0, 0.1);
+            --copy-btn-hover-color: #1e293b;
+            --toast-bg: rgba(255, 255, 255, 0.97);
+            --toast-color: #16a34a;
+            --toggle-bg: rgba(0, 0, 0, 0.07);
+            --toggle-border: rgba(0, 0, 0, 0.12);
+            --toggle-color: #f59e0b;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--color);
+            padding: 20px;
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--container-bg);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: var(--container-shadow);
+            transition: background 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--color-muted);
+            margin-bottom: 30px;
+            transition: color 0.3s ease;
+        }
+
+        button {
+            background: #facc15;
+            color: #111827;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #fde047;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
+        }
+
+        button:active {
+            transform: scale(0.95);
+            background: #eab308;
+        }
+
+        button.clicked {
+            animation: btnPop 0.35s ease forwards;
+        }
+
+        @keyframes btnPop {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(0.92); }
+            70%  { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.45);
+            transform: scale(0);
+            animation: rippleAnim 0.55s linear;
+            pointer-events: none;
+        }
+
+        @keyframes rippleAnim {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        .result-box {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .set {
+            background: var(--set-bg);
+            border-radius: 20px;
+            padding: 20px;
+            opacity: 0;
+            animation: setSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            transition: background 0.4s ease;
+        }
+
+        .set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .set-title {
+            font-size: 1.1rem;
+            color: #facc15;
+            font-weight: bold;
+        }
+
+        .copy-btn {
+            background: var(--copy-btn-bg);
+            border: 1px solid var(--copy-btn-border);
+            color: var(--copy-btn-color);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, transform 0.15s, border-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .copy-btn:hover {
+            background: var(--copy-btn-hover-bg);
+            color: var(--copy-btn-hover-color);
+        }
+
+        .copy-btn.copied {
+            background: rgba(74, 222, 128, 0.25);
+            border-color: #4ade80;
+            color: #4ade80;
+            animation: copyPop 0.3s ease;
+        }
+
+        @keyframes copyPop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
+        .copy-all-btn {
+            width: 100%;
+            background: rgba(250, 204, 21, 0.12);
+            border: 1px solid rgba(250, 204, 21, 0.35);
+            color: #facc15;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.25s, border-color 0.25s, color 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            opacity: 0;
+            position: relative;
+            overflow: hidden;
+            animation: setSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .copy-all-btn:hover {
+            background: rgba(250, 204, 21, 0.22);
+        }
+
+        .copy-all-btn.copied {
+            opacity: 1;
+            background: rgba(74, 222, 128, 0.2);
+            border-color: #4ade80;
+            color: #4ade80;
+            animation: copyAllPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .copy-all-btn.copied::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -80%;
+            width: 55%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+            animation: shimmer 0.65s ease forwards;
+            pointer-events: none;
+        }
+
+        @keyframes copyAllPop {
+            0%   { opacity: 1; transform: scale(1); }
+            30%  { opacity: 1; transform: scale(0.96); }
+            65%  { opacity: 1; transform: scale(1.04); box-shadow: 0 0 22px rgba(74, 222, 128, 0.35); }
+            100% { opacity: 1; transform: scale(1); box-shadow: none; }
+        }
+
+        @keyframes shimmer {
+            to { left: 130%; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--toast-bg);
+            border: 1px solid var(--toast-color);
+            color: var(--toast-color);
+            padding: 13px 22px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(74, 222, 128, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            animation: toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .toast.hide {
+            animation: toastOut 0.3s ease forwards;
+        }
+
+        @keyframes toastIn {
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        @keyframes toastOut {
+            to { opacity: 0; transform: translateX(-50%) translateY(12px); }
+        }
+
+        .numbers {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .ball {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            box-shadow: inset -3px -3px 5px rgba(0, 0, 0, 0.2), 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            animation: ballPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .yellow { background: #fbc02d; color: #111; }
+        .blue   { background: #1e88e5; }
+        .red    { background: #e53935; }
+        .gray   { background: #90a4ae; }
+        .green  { background: #43a047; }
+
+        @keyframes setSlideIn {
+            from { opacity: 0; transform: translateY(24px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+
+        @keyframes ballPop {
+            0%   { opacity: 0; transform: scale(0.3) rotate(-15deg); }
+            60%  { opacity: 1; transform: scale(1.18) rotate(4deg); }
+            100% { opacity: 1; transform: scale(1)    rotate(0deg); }
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--toggle-bg);
+            border: 1px solid var(--toggle-border);
+            color: var(--toggle-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            font-size: 1.2rem;
+            z-index: 100;
+            transition: background 0.3s, border-color 0.3s, color 0.3s, transform 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(20deg);
+            background: var(--toggle-bg);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .theme-toggle.spin {
+            animation: toggleSpin 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes toggleSpin {
+            from { transform: rotate(0deg) scale(1); }
+            50%  { transform: rotate(180deg) scale(1.15); }
+            to   { transform: rotate(360deg) scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .ball {
+                width: 42px;
+                height: 42px;
+                font-size: 0.95rem;
+            }
+            .theme-toggle {
+                top: 12px;
+                right: 12px;
+                width: 38px;
+                height: 38px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="테마 전환">🌙</button>
+    <div class="container">
+        <h1>🎰 로또번호 추천기</h1>
+        <p>버튼을 누르면 로또 번호 5세트를 추천합니다.</p>
+        <button id="generateBtn" type="button">번호 추천받기</button>
+        <div class="result-box" id="result"></div>
+    </div>
+
+    <script>
+        function getColor(num) {
+            if (num <= 10) return 'yellow';
+            if (num <= 20) return 'blue';
+            if (num <= 30) return 'red';
+            if (num <= 40) return 'gray';
+            return 'green';
+        }
+
+        function createNumbers() {
+            const numSet = new Set();
+            while (numSet.size < 6) {
+                const random = Math.floor(Math.random() * 45) + 1;
+                numSet.add(random);
+            }
+            return Array.from(numSet).sort((a, b) => a - b);
+        }
+
+        const SVG_COPY = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+        const SVG_CHECK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+        function setCopied(btn, original) {
+            btn.innerHTML = SVG_CHECK + '복사됨';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.innerHTML = original; btn.classList.remove('copied'); }, 2000);
+        }
+
+        let toastTimer = null;
+        function showToast(message) {
+            if (toastTimer) {
+                clearTimeout(toastTimer);
+                const prev = document.querySelector('.toast');
+                if (prev) prev.remove();
+            }
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = SVG_CHECK + message;
+            document.body.appendChild(toast);
+            toastTimer = setTimeout(() => {
+                toast.classList.add('hide');
+                toast.addEventListener('animationend', () => toast.remove(), { once: true });
+                toastTimer = null;
+            }, 2500);
+        }
+
+        function generateLotto() {
+            const result = document.getElementById('result');
+            const fragment = document.createDocumentFragment();
+            const allNums = [];
+
+            for (let i = 1; i <= 5; i++) {
+                const nums = createNumbers();
+                allNums.push(nums);
+                const setDiv = document.createElement('div');
+                setDiv.className = 'set';
+                setDiv.style.animationDelay = `${(i - 1) * 0.1}s`;
+
+                const header = document.createElement('div');
+                header.className = 'set-header';
+
+                const title = document.createElement('div');
+                title.className = 'set-title';
+                title.innerText = `추천 번호 ${i}세트`;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.type = 'button';
+                copyBtn.innerHTML = SVG_COPY + '복사';
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(nums.join(', ')).then(() => {
+                        setCopied(copyBtn, SVG_COPY + '복사');
+                        showToast(`${i}세트 번호가 복사됐어요!`);
+                    });
+                });
+
+                header.appendChild(title);
+                header.appendChild(copyBtn);
+
+                const numbersDiv = document.createElement('div');
+                numbersDiv.className = 'numbers';
+
+                const setDelay = (i - 1) * 0.1;
+                nums.forEach((num, j) => {
+                    const ball = document.createElement('div');
+                    ball.className = `ball ${getColor(num)}`;
+                    ball.innerText = num;
+                    ball.style.animationDelay = `${setDelay + 0.15 + j * 0.07}s`;
+                    numbersDiv.appendChild(ball);
+                });
+
+                setDiv.appendChild(header);
+                setDiv.appendChild(numbersDiv);
+                fragment.appendChild(setDiv);
+            }
+
+            const copyAllBtn = document.createElement('button');
+            copyAllBtn.className = 'copy-all-btn';
+            copyAllBtn.type = 'button';
+            copyAllBtn.innerHTML = SVG_COPY + '전체 복사';
+            copyAllBtn.style.animationDelay = `${5 * 0.1}s`;
+            copyAllBtn.addEventListener('click', () => {
+                const text = allNums.map((nums, i) => `${i + 1}세트: ${nums.join(', ')}`).join('\n');
+                navigator.clipboard.writeText(text).then(() => {
+                    setCopied(copyAllBtn, SVG_COPY + '전체 복사');
+                    showToast('5세트 번호가 클립보드에 복사됐어요!');
+                });
+            });
+            fragment.appendChild(copyAllBtn);
+
+            result.innerHTML = '';
+            result.appendChild(fragment);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('themeToggle');
+            const isLight = localStorage.getItem('theme') === 'light';
+            if (isLight) { document.body.classList.add('light'); toggleBtn.textContent = '☀️'; }
+
+            toggleBtn.addEventListener('click', () => {
+                const light = document.body.classList.toggle('light');
+                toggleBtn.textContent = light ? '☀️' : '🌙';
+                localStorage.setItem('theme', light ? 'light' : 'dark');
+                toggleBtn.classList.remove('spin');
+                void toggleBtn.offsetWidth;
+                toggleBtn.classList.add('spin');
+                toggleBtn.addEventListener('animationend', () => toggleBtn.classList.remove('spin'), { once: true });
+            });
+
+            const btn = document.getElementById('generateBtn');
+
+            btn.addEventListener('click', function(e) {
+                // ripple
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                const size = Math.max(btn.offsetWidth, btn.offsetHeight);
+                const rect = btn.getBoundingClientRect();
+                ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
+                btn.appendChild(ripple);
+                ripple.addEventListener('animationend', () => ripple.remove());
+
+                // pop animation
+                btn.classList.remove('clicked');
+                void btn.offsetWidth;
+                btn.classList.add('clicked');
+                btn.addEventListener('animationend', () => btn.classList.remove('clicked'), { once: true });
+
+                generateLotto();
+            });
+        });
+    </script>
+</body>
+</html>
