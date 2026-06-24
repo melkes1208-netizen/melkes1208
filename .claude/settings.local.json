@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(node *)",
+      "Bash(npm init *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git config *)",
+      "Bash(git commit -m ' *)",
+      "Bash(gh repo *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(env -u GITHUB_TOKEN gh auth token)",
+      "Bash(env *)"
+    ]
+  }
+}
